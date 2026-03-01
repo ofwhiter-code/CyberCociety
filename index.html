@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Киберпреступность в России</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: #e8ecf5;
+    color: #222;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: white;
+    padding: 50px 20px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #e94560, #c73652, #e94560);
+  }
+
+  header h1 { font-size: 36px; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  header p  { color: #b0bec5; font-size: 15px; }
+
+  nav {
+    background: #16213e;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+
+  nav a {
+    color: #cfd8dc;
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: background 0.25s, color 0.25s, transform 0.15s;
+  }
+
+  nav a:hover { background: #e94560; color: white; transform: translateY(-1px); }
+
+  .container { max-width: 980px; margin: 0 auto; padding: 28px 20px; }
+
+  section {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 22px;
+    border: 1px solid #e0e4ed;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    transition: box-shadow 0.3s;
+  }
+
+  section:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.11); }
+
+  h2 {
+    font-size: 22px;
+    color: #1a1a2e;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #e94560;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  h3 { font-size: 17px; color: #1a1a2e; margin: 18px 0 7px; }
+  p  { margin-bottom: 10px; color: #444; }
+
+  .stats-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 18px 0; }
+
+  .stat-box {
+    flex: 1;
+    min-width: 160px;
+    background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%);
+    border: 1px solid #e0e4ed;
+    border-top: 4px solid #e94560;
+    padding: 18px 14px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .stat-box:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(233,69,96,0.15); }
+  .stat-box .num  { font-size: 26px; font-weight: bold; color: #e94560; display: block; }
+  .stat-box .lbl  { font-size: 12px; color: #777; margin-top: 5px; line-height: 1.4; }
+
+  .chart { margin: 18px 0; }
+  .bar-item { margin-bottom: 12px; }
+  .bar-label { font-size: 14px; color: #555; margin-bottom: 4px; font-weight: bold; }
+  .bar-track { background: #f0f0f0; border-radius: 6px; height: 24px; overflow: hidden; }
+
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e94560, #ff6b85);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    animation: barLoad 1.2s ease-out both;
+  }
+
+  @keyframes barLoad {
+    from { clip-path: inset(0 100% 0 0); }
+    to   { clip-path: inset(0 0% 0 0); }
+  }
+
+  .types-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+
+  .type-card {
+    background: #f8f9ff;
+    border: 1px solid #e0e4ed;
+    border-radius: 10px;
+    padding: 18px;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  }
+
+  .type-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); border-color: #e94560; }
+  .type-card h3   { font-size: 15px; color: #e94560; margin: 0 0 7px; }
+  .type-card p    { font-size: 14px; margin: 0; color: #555; }
+
+  .protect-list { list-style: none; margin-top: 12px; }
+
+  .protect-list li {
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: #f8fff8;
+    border-radius: 8px;
+    border-left: 4px solid #27ae60;
+    font-size: 15px;
+    color: #333;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+  }
+
+  .protect-list li:hover  { transform: translateX(4px); }
+  .protect-list li strong { color: #1a1a2e; }
+
+  .checker {
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 22px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .checker h2 { color: white; border-bottom-color: #e94560; margin-bottom: 10px; }
+  .checker p  { color: #90a4ae; margin-bottom: 18px; }
+
+  .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .url-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 13px 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 14px;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .url-input::placeholder { color: rgba(255,255,255,0.3); }
+  .url-input:focus { border-color: #e94560; background: rgba(255,255,255,0.12); }
+
+  .check-btn {
+    background: linear-gradient(135deg, #e94560, #c73652);
+    color: white;
+    border: none;
+    padding: 13px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 3px 12px rgba(233,69,96,0.4);
+  }
+
+  .check-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(233,69,96,0.5); }
+  .check-btn:active { transform: scale(0.97); }
+
+  .result {
+    display: none;
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid;
+    animation: fadeSlide 0.4s ease;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result.safe    { background: rgba(39,174,96,0.1);  border-color: #27ae60; }
+  .result.warning { background: rgba(241,196,15,0.1); border-color: #f1c40f; }
+  .result.danger  { background: rgba(231,76,60,0.12); border-color: #e74c3c; }
+
+  .result-title { font-size: 19px; font-weight: bold; margin-bottom: 12px; }
+  .result.safe    .result-title { color: #2ecc71; }
+  .result.warning .result-title { color: #f1c40f; }
+  .result.danger  .result-title { color: #e74c3c; }
+
+  .result-url {
+    font-family: monospace;
+    font-size: 12px;
+    color: #90a4ae;
+    margin-bottom: 14px;
+    word-break: break-all;
+    background: rgba(0,0,0,0.25);
+    padding: 7px 12px;
+    border-radius: 5px;
+  }
+
+  .check-item { font-size: 14px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .check-item.ok   { color: #5ddf90; }
+  .check-item.bad  { color: #ff6b6b; }
+  .check-item.warn { color: #ffd36b; }
+
+  .score-line { margin-top: 16px; font-size: 13px; color: #90a4ae; }
+  .score-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 7px; overflow: hidden; }
+  .score-fill  { height: 100%; border-radius: 4px; transition: width 0.9s ease; }
+
+  .note {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #607d8b;
+    background: rgba(255,255,255,0.04);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  footer {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #78909c;
+    text-align: center;
+    padding: 28px 20px;
+    font-size: 13px;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.15);
+  }
+
+  footer span { color: #e94560; }
+
+  @media(max-width: 620px) {
+    .types-grid { grid-template-columns: 1fr; }
+    .stats-row  { flex-direction: column; }
+    header h1   { font-size: 26px; }
+    section     { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<header>
+  <h1>🔐 Киберпреступность в России</h1>
+  <p>Информационный проект — актуальные данные за 2024–2025 год</p>
+</header>
+
+<nav>
+  <a href="#checker">🔍 Проверить сайт</a>
+  <a href="#stats">📊 Статистика</a>
+  <a href="#types">⚠️ Виды угроз</a>
+  <a href="#protect">🛡️ Защита</a>
+</nav>
+
+<div class="container">
+
+  <div class="checker fade-in" id="checker">
+    <h2>🔍 Проверка сайта на фишинг</h2>
+    <p>Вставьте ссылку — система проверит её на признаки мошеннического сайта</p>
+    <div class="input-row">
+      <input class="url-input" id="urlInput" type="text" placeholder="https://example.com" autocomplete="off" spellcheck="false">
+      <button class="check-btn" onclick="checkURL()">Проверить</button>
+    </div>
+    <div class="result" id="resultBox">
+      <div class="result-title" id="resTitle"></div>
+      <div class="result-url" id="resUrl"></div>
+      <div id="resList"></div>
+      <div class="score-line">
+        Индекс риска: <span id="scoreNum"></span>/100
+        <div class="score-track"><div class="score-fill" id="scoreFill"></div></div>
+      </div>
+    </div>
+    <div class="note">⚠️ Инструмент выполняет эвристический анализ по признакам фишинга. Для полной проверки используйте VirusTotal.com</div>
+  </div>
+
+  <section id="stats" class="fade-in">
+    <h2>📊 Статистика по России (2024–2025)</h2>
+    <p>По данным МВД РФ, Центрального банка России, Сбербанка и компании BI.ZONE.</p>
+    <div class="stats-row">
+      <div class="stat-box"><span class="num">765 000</span><span class="lbl">киберпреступлений в 2024 г.</span></div>
+      <div class="stat-box"><span class="num">190 млрд ₽</span><span class="lbl">ущерб за 2024 год</span></div>
+      <div class="stat-box"><span class="num">89%</span><span class="lbl">дел не раскрыто</span></div>
+      <div class="stat-box"><span class="num">300 млн</span><span class="lbl">строк данных утекло</span></div>
+    </div>
+    <h3>Распределение по видам преступлений</h3>
+    <div class="chart">
+      <div class="bar-item"><div class="bar-label">Телефонное мошенничество — 43%</div><div class="bar-track"><div class="bar-fill" style="width:43%">43%</div></div></div>
+      <div class="bar-item"><div class="bar-label">Интернет-мошенничество — 30%</div><div class="bar-track"><div class="bar-fill" style="width:30%;animation-delay:0.1s">30%</div></div></div>
+      <div class="bar-item"><div class="bar-label">Кража данных — 12%</div><div class="bar-track"><div class="bar-fill" style="width:12%;animation-delay:0.2s">12%</div></div></div>
+      <div class="bar-item"><div class="bar-label">Вирусы и вымогатели — 8%</div><div class="bar-track"><div class="bar-fill" style="width:8%;animation-delay:0.3s">8%</div></div></div>
+      <div class="bar-item"><div class="bar-label">DDoS и взломы — 5%</div><div class="bar-track"><div class="bar-fill" style="width:5%;animation-delay:0.4s">5%</div></div></div>
+      <div class="bar-item"><div class="bar-label">Прочее — 2%</div><div class="bar-track"><div class="bar-fill" style="width:2%;animation-delay:0.5s">2%</div></div></div>
+    </div>
+    <p style="font-size:13px; color:#999; margin-top:8px;">Источники: МВД РФ, ЦБ РФ, BI.ZONE, Лаборатория Касперского, 2024–2025</p>
+  </section>
+
+  <section id="types" class="fade-in">
+    <h2>⚠️ Виды киберпреступлений</h2>
+    <p>Наиболее распространённые угрозы для граждан и организаций в России.</p>
+    <div class="types-grid">
+      <div class="type-card"><h3>📞 Телефонное мошенничество</h3><p>Звонки от «сотрудников банка» или «МВД». В 2024 году мошенники начали использовать ИИ-синтез голоса. Ущерб — 19,8 млрд рублей за год.</p></div>
+      <div class="type-card"><h3>🎣 Фишинг</h3><p>Поддельные сайты Госуслуг, банков и магазинов. В 2024 году Роскомнадзор заблокировал свыше 9 000 таких сайтов.</p></div>
+      <div class="type-card"><h3>🔒 Вирусы-вымогатели</h3><p>Программы шифруют файлы и требуют выкуп. Атаки на российские компании выросли на 90% в 2024 году. Средний выкуп — 12 млн рублей.</p></div>
+      <div class="type-card"><h3>💾 Утечки данных</h3><p>В 2024 году утекли базы крупных ритейлеров и медклиник. 300 млн строк с именами и телефонами оказались в открытом доступе.</p></div>
+      <div class="type-card"><h3>📈 Инвестиционные скамы</h3><p>Фальшивые платформы с «гарантированным доходом». ЦБ РФ выявил свыше 3 400 финансовых пирамид в интернете в 2024 году.</p></div>
+      <div class="type-card"><h3>💬 Взлом мессенджеров</h3><p>Угон аккаунтов Telegram для рассылки просьб о деньгах. Россия вошла в топ-3 по числу взломов — более 400 000 случаев в 2024 году.</p></div>
+    </div>
+  </section>
+
+  <section id="protect" class="fade-in">
+    <h2>🛡️ Как защититься</h2>
+    <p>Соблюдение простых правил снижает риск стать жертвой мошенников на 80–90%.</p>
+    <ul class="protect-list">
+      <li><strong>Не верьте звонкам.</strong> Если звонят из «банка» или «МВД» — кладите трубку и перезвоните сами по официальному номеру с сайта.</li>
+      <li><strong>Двухфакторная аутентификация.</strong> Включите 2FA на Госуслугах, в банковском приложении и Telegram. Это защищает даже при краже пароля.</li>
+      <li><strong>Проверяйте адрес сайта.</strong> Госуслуги — только gosuslugi.ru. Перед вводом данных убедитесь, что адрес написан правильно и есть значок HTTPS.</li>
+      <li><strong>Обновляйте программы.</strong> Большинство вирусов проникают через уязвимости в устаревшем ПО. Включите автообновление Windows и приложений.</li>
+      <li><strong>Делайте резервные копии.</strong> Храните важные файлы в облаке и на внешнем диске. При атаке вымогателя восстановите данные без выкупа.</li>
+      <li><strong>Расскажите пожилым родственникам.</strong> Пенсионеры — основная цель мошенников в России. Объясните им основные схемы обмана.</li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <p>Информационный проект «Киберпреступность в России» · <span>2025</span></p>
+  <p style="margin-top:6px;">Данные: МВД РФ · ЦБ РФ · Сбербанк · BI.ZONE · Лаборатория Касперского</p>
+</footer>
+
+<script>
+// PARTICLE BACKGROUND
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const dots = Array.from({length: 70}, () => ({
+  x:  Math.random() * window.innerWidth,
+  y:  Math.random() * window.innerHeight,
+  r: 2.5 + Math.random() * 3,
+  dx: (Math.random() - 0.5) * 0.6,
+  dy: (Math.random() - 0.5) * 0.6
+}));
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for(let i = 0; i < dots.length; i++) {
+    for(let j = i + 1; j < dots.length; j++) {
+      const dx = dots[i].x - dots[j].x;
+      const dy = dots[i].y - dots[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < 150) {
+        ctx.beginPath();
+        ctx.moveTo(dots[i].x, dots[i].y);
+        ctx.lineTo(dots[j].x, dots[j].y);
+        ctx.strokeStyle = 'rgba(26,26,46,' + (0.25 * (1 - dist/130)) + ')';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+  }
+  dots.forEach(d => {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(233,69,96,0.5)';
+    ctx.fill();
+    d.x += d.dx; d.y += d.dy;
+    if(d.x < 0) d.x = canvas.width;
+    if(d.x > canvas.width)  d.x = 0;
+    if(d.y < 0) d.y = canvas.height;
+    if(d.y > canvas.height) d.y = 0;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+// SCROLL FADE-IN
+const fadeEls = document.querySelectorAll('.fade-in');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+fadeEls.forEach(el => obs.observe(el));
+setTimeout(() => {
+  fadeEls.forEach(el => {
+    if(el.getBoundingClientRect().top < window.innerHeight) el.classList.add('visible');
+  });
+}, 80);
+
+// CHECKER
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
+  if(e.key === 'Enter') checkURL();
+});
+
+function checkURL() {
+  const raw = document.getElementById('urlInput').value.trim();
+  if(!raw) return;
+  let url = raw;
+  if(!/^https?:\/\//i.test(url)) url = 'http://' + url;
+  let parsed;
+  try { parsed = new URL(url); }
+  catch(e) {
+    show('danger', '❌ Некорректная ссылка', raw, [{type:'bad', text:'Введённая строка не является корректным URL-адресом'}], 100);
+    return;
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  const fullUrl  = url.toLowerCase();
+  const checks   = [];
+  let score = 0;
+
+  if(parsed.protocol === 'https:') { checks.push({type:'ok',  text:'✔ Протокол HTTPS — соединение зашифровано'}); }
+  else { checks.push({type:'bad', text:'✖ Используется HTTP без шифрования'}); score += 25; }
+
+  if(/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) { checks.push({type:'bad', text:'✖ IP-адрес вместо домена — признак фишинга'}); score += 40; }
+  else { checks.push({type:'ok', text:'✔ Используется нормальное доменное имя'}); }
+
+  if(url.length > 100) { checks.push({type:'warn', text:'⚠ Очень длинный адрес — мошенники скрывают настоящий сайт'}); score += 15; }
+  else { checks.push({type:'ok', text:'✔ Длина адреса в норме ('+url.length+' симв.)'}); }
+
+  const suspWords = ['login','secure','verify','account','update','confirm','banking','payment','gosuslugi-','sberbank-','sign-in','signin','auth','card','password','suspend','support-','help-','online-bank','personal','cabinet-'];
+  const found = suspWords.filter(w => hostname.includes(w));
+  if(found.length > 0) { checks.push({type:'warn', text:'⚠ Слова-приманки в домене: "'+found.join('", "')+'" — типично для фишинга'}); score += found.length * 12; }
+
+  const brands = ['sberbank','tinkoff','vtb','gosuslugi','nalog','yandex','vk','google','apple','microsoft','alfabank'];
+  const parts = hostname.split('.');
+  const mainDomain = parts.slice(-2).join('.');
+  const sub = parts.slice(0,-2).join('.');
+  const brandInSub = brands.filter(b => sub.includes(b));
+  if(brandInSub.length && !brands.some(b => mainDomain.startsWith(b))) { checks.push({type:'bad', text:'✖ Бренд "'+brandInSub[0]+'" в поддомене — классический фишинг'}); score += 45; }
+
+  const hyphens = (hostname.match(/-/g)||[]).length;
+  if(hyphens >= 3) { checks.push({type:'bad', text:'✖ Много дефисов ('+hyphens+') — признак поддельного сайта'}); score += 20; }
+  else if(hyphens >= 1) { checks.push({type:'warn', text:'⚠ Дефис в домене — встречается и у мошенников, и у обычных сайтов'}); score += 5; }
+
+  if(parsed.port && !['80','443',''].includes(parsed.port)) { checks.push({type:'bad', text:'✖ Нестандартный порт ('+parsed.port+') — официальные сайты так не делают'}); score += 30; }
+  if(fullUrl.includes('@')) { checks.push({type:'bad', text:'✖ Символ @ в адресе — используется для скрытия настоящего сайта'}); score += 35; }
+
+  const tld = hostname.split('.').pop();
+  const suspTlds = ['tk','ml','ga','cf','gq','xyz','top','click','link','work','loan','win','download'];
+  if(suspTlds.includes(tld)) { checks.push({type:'warn', text:'⚠ Зона ".'+tld+'" часто используется мошенниками'}); score += 20; }
+  else { checks.push({type:'ok', text:'✔ Доменная зона ".'+tld+'" является стандартной'}); }
+
+  const trusted = ['gosuslugi.ru','mos.ru','nalog.gov.ru','cbr.ru','sberbank.ru','tinkoff.ru','vtb.ru','alfabank.ru','yandex.ru','vk.com','mail.ru','google.com','youtube.com','wikipedia.org','mvd.ru'];
+  if(trusted.includes(mainDomain) || trusted.includes(hostname)) {
+    checks.unshift({type:'ok', text:'✔ Домен "'+mainDomain+'" — официальный и проверенный ресурс'});
+    score = Math.max(0, score - 80);
+  }
+
+  score = Math.min(100, Math.max(0, score));
+  let level, title;
+  if(score <= 15)      { level='safe';    title='✅ Скорее всего безопасен'; }
+  else if(score <= 45) { level='warning'; title='⚠️ Подозрительный сайт — будьте осторожны'; }
+  else                 { level='danger';  title='🚨 Высокий риск фишинга!'; }
+  show(level, title, raw, checks, score);
+}
+
+function show(level, title, urlText, checks, score) {
+  const box = document.getElementById('resultBox');
+  box.className = 'result ' + level;
+  box.style.display = 'block';
+  document.getElementById('resTitle').textContent = title;
+  document.getElementById('resUrl').textContent = urlText;
+  const list = document.getElementById('resList');
+  list.innerHTML = '';
+  checks.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'check-item ' + c.type;
+    el.textContent = c.text;
+    list.appendChild(el);
+  });
+  document.getElementById('scoreNum').textContent = score;
+  const fill = document.getElementById('scoreFill');
+  const colors = {safe:'#27ae60', warning:'#f1c40f', danger:'#e74c3c'};
+  fill.style.background = colors[level];
+  fill.style.width = '0%';
+  setTimeout(() => fill.style.width = score + '%', 60);
+  box.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+</body>
+</html>
